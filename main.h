@@ -59,3 +59,4 @@ int sceKernelSendNotificationRequest(int, notify_request_t*, size_t, int);
 static u32 get_fw_version(void);
 static size_t get_kdata_size(u64 kdata_base);
 static void notify(const char *fmt, ...);
+int dump_to_file_gpu(const char *path, u64 kdata_base, size_t total_size, u64 curproc, u64 proc_vmspace_off);
