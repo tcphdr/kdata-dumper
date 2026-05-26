@@ -225,7 +225,7 @@ int gpu_dma_setup(u64 curproc, u64 proc_vmspace_off) {
     u32 vmid = get_curproc_vmid(curproc, proc_vmspace_off);
     u64 gvms  = get_gvmspace(vmid);
     u64 start = kread64(gvms + GVMSPACE_START_VA);
-    u64 gsize = kread64(gvms + GVMSPACE_SIZE_OFF);
+    //u64 gsize = kread64(gvms + GVMSPACE_SIZE_OFF);
 
     // relative VA within GPU address space
     u64 rel_va = victim_va - start;
