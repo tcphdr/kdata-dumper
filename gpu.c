@@ -5,6 +5,12 @@
 #include <main.h>
 #include <gpu.h>
 
+static int gc_fd = -1;
+static u64 victim_va  = 0;
+static u64 transfer_va = 0;
+static u64 victim_ptbe_va = 0;
+static u64 cleared_ptbe_for_ro = 0;
+
 // Read kernel qword via kernel_copyout
 static u64 kread64(u64 addr) {
     u64 val = 0;
