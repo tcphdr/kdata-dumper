@@ -1,7 +1,6 @@
 /*
  * kdata-dumper: main.c
  */
-#pragma once
 
 #include <main.h>
 
@@ -22,6 +21,36 @@ static u32 get_fw_version(void) {
     size_t sz = sizeof(fw);
     sysctlbyname("kern.sdk_version", &fw, &sz, NULL, 0);
     return fw;
+}
+
+static size_t get_kdata_size(u64 kdata_base) {
+    u64 kern_base = (u64)KERNEL_ADDRESS_TEXT_BASE;
+    Elf64_Ehdr ehdr;
+    if (kernel_copyout(kern_base, &ehdr, sizeof(ehdr)) != 0) {
+        NOTIFY("kdata-dumper: failed to read kernel ELF header");
+        return 0;
+    }
+    if (ehdr.e_ident[0] != 0x7f || ehdr.e_phnum == 0) {
+        NOTIFY("kdata-dumper: invalid ELF header");
+        return 0;
+    }
+    size_t phdrs_size = sizeof(Elf64_Phdr) * ehdr.e_phnum;
+    Elf64_Phdr *phdrs = malloc(phdrs_size);
+    if (!phdrs) return 0;
+    if (kernel_copyout(kern_base + ehdr.e_phoff, phdrs, phdrs_size) != 0) {
+        free(phdrs);
+        return 0;
+    }
+    size_t result = 0;
+    for (int i = 0; i < ehdr.e_phnum; i++) {
+        if (phdrs[i].p_type == PT_LOAD && phdrs[i].p_vaddr == kdata_base) {
+            result = phdrs[i].p_filesz;
+            NOTIFY("kdata-dumper: ELF phdr match: %zu MB", result / (1024*1024));
+            break;
+        }
+    }
+    free(phdrs);
+    return result;
 }
 
 int main(int argc, char *argv[]) {
