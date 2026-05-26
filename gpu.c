@@ -30,7 +30,7 @@ static u64 resolve_dmap_and_cr3(u64 *cr3_out) {
 }
 
 static u64 phys_to_dmap(u64 phys) {
-    return DMAP_BASE + phys;
+    return g_dmap_base + phys;
 }
 
 // Walk CPU page tables to resolve virtual -> physical
