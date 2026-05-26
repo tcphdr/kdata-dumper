@@ -2,7 +2,7 @@
  * kdata-dumper: gpu.c
  */
 
-#include <gpu.h>
+#include "gpu.h"
 
 static int gc_fd = -1;
 static u64 victim_va  = 0;
