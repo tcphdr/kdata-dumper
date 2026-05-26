@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include <main.h>
+#include "main.h"
 
 #define GPU_PDE_ADDR_MASK   0x0000ffffffffffc0ULL
 #define GPU_VALID           (1ULL << 0)
@@ -17,7 +17,6 @@
     ((2u << 30) | (((count) - 1u) << 16) | (((opcode) & 0xff) << 8) | (1u << 1))
 
 int gpu_dma_setup(u64 curproc, u64 proc_vmspace_off);
-int dump_to_file_gpu(const char *path, u64 kdata_base, size_t total_size, u64 curproc, u64 proc_vmspace_off);
 static u64 gpu_walk_pt(u32 vmid, u64 rel_va, u64 *page_size_out);
 static u64 gpu_walk_pt(u32 vmid, u64 rel_va, u64 *page_size_out);
 static u64 resolve_dmap_and_cr3(u64 *cr3_out);
