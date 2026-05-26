@@ -1,6 +1,7 @@
 /*
  * kdata-dumper: gpu.c
  */
+#pragma once
 
 #include <main.h>
 #include <gpu.h>
@@ -10,6 +11,16 @@ static u64 victim_va  = 0;
 static u64 transfer_va = 0;
 static u64 victim_ptbe_va = 0;
 static u64 cleared_ptbe_for_ro = 0;
+
+static u64 resolve_dmap_and_cr3(u64 *cr3_out) {
+    // pmap_store is at data_base + FW-specific offset
+    // For 11.20: DATA_BASE_KERNEL_PMAP_STORE offset = 0x02E04F18
+    u64 pmap_store = (u64)KERNEL_ADDRESS_DATA_BASE + 0x02E04F18ULL;
+    u64 pml4 = kread64(pmap_store + 0x20); // PMAP_PML4 offset
+    u64 cr3  = kread64(pmap_store + 0x28); // PMAP_CR3 offset
+    if (cr3_out) *cr3_out = cr3;
+    return pml4 - cr3; // dmap_base
+}
 
 // Read kernel qword via kernel_copyout
 static u64 kread64(u64 addr) {
