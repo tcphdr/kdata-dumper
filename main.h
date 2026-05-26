@@ -1,6 +1,8 @@
 /*
  * kdata-dumper: main.h
  */
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,16 +29,15 @@
 //#define DATA_BASE           0xffffffffcb980000ULL
 #define VMSPACE_VM_PMAP_OFF 0x1d8
 #define VMSPACE_VM_VMID_OFF 0x1ec
-#define DATA_BASE			KERNEL_ADDRESS_DATA_BASE // MIGHT NEED TO BE REDEFINED OR ADDRESSED DIFFERENTLY.
-#define DATA_BASE_GVMSPACE  (DATA_BASE + 0x02E66570ULL) // UNSURE OF THIS HARDCODED VALUE.
+#define DATA_BASE_GVMSPACE  ((u64)KERNEL_ADDRESS_DATA_BASE + 0x02E66570ULL)
 #define SIZEOF_GVMSPACE     0x100
 #define GVMSPACE_START_VA   0x08
 #define GVMSPACE_SIZE_OFF   0x10
 #define GVMSPACE_PAGE_DIR   0x38
 
-// CPU (THESE NEED TO BE RESOLVED DYNAMICALLY AT RUNTIME)
-//#define CPU_PG_PHYS_FRAME   0x000ffffffffff000ULL
-//#define CPU_PG_PS_FRAME     0x000fffffffe00000ULL
+// CPU
+#define CPU_PG_PHYS_FRAME   0x000ffffffffff000ULL
+#define CPU_PG_PS_FRAME     0x000fffffffe00000ULL
 
 // Typedef shortcuts.
 typedef uint64_t u64;
@@ -55,17 +56,6 @@ typedef struct {
 int sceKernelSendNotificationRequest(int, notify_request_t*, size_t, int);
 
 // Declerations
-static u64 gpu_walk_pt(u32 vmid, u64 rel_va, u64 *page_size_out);
-static void gpu_submit_dma(u64 dst_va, u64 src_va, u32 size_bytes);
-int gpu_dma_setup(u64 curproc, u64 proc_vmspace_off);
-static void gpu_remap_victim(u64 target_phys);
-int dump_to_file_gpu(const char *path, u64 kdata_base, size_t total_size, u64 curproc, u64 proc_vmspace_off);
-static u64 resolve_dmap_and_cr3(u64 *cr3_out);
-static u64 kread64(u64 addr);
-static u64 phys_to_dmap(u64 phys);
-static u64 virt_to_phys(u64 vaddr, u64 cr3);
-static u32 get_curproc_vmid(u64 curproc, u64 proc_vmspace_off);
-static u64 get_gvmspace(u32 vmid);
-static u64 get_pdb2_addr(u32 vmid);
 static u32 get_fw_version(void);
+static size_t get_kdata_size(u64 kdata_base);
 static void notify(const char *fmt, ...);
