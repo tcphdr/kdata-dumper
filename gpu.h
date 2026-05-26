@@ -12,10 +12,3 @@
 // PM4 packet building
 #define PM4_TYPE3_HEADER(opcode, count) \
     ((2u << 30) | (((count) - 1u) << 16) | (((opcode) & 0xff) << 8) | (1u << 1))
-
-static int gc_fd = -1;
-static u64 victim_va  = 0;
-static u64 transfer_va = 0;
-static u64 victim_ptbe_va = 0;
-static u64 cleared_ptbe_for_ro = 0;
-
