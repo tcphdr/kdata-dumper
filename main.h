@@ -14,6 +14,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
 #include <sys/elf64.h>
 #include <ps5/kernel.h>
 
