@@ -17,7 +17,7 @@ $(ELF): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
 	rm -f $(ELF)
