@@ -2,7 +2,7 @@
  * kdata-dumper: main.c
  */
 
-#include <main.h>
+#include "main.h"
 
 static void notify(const char *fmt, ...) {
     char buf[3075];
