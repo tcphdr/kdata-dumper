@@ -4,7 +4,7 @@
 
 #include "main.h"
 
-static void notify(const char *fmt, ...) {
+void notify(const char *fmt, ...) {
     char buf[3075];
     va_list va;
     va_start(va, fmt);
