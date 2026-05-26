@@ -150,7 +150,6 @@ static void gpu_submit_dma(u64 dst_va, u64 src_va, u32 size_bytes) {
 
     // Write PM4 into cmd_va (reuse transfer_va + offset for cmd buf)
     u64 cmd_va = transfer_va + GPU_DMA_SIZE - 0x1000;
-    //__asm__ volatile("" ::: "memory");
     for (int i = 0; i < 7; i++) {
         u32 v = pm4[i];
         // write pm4 dword into cmd_va via mapped memory
@@ -225,7 +224,6 @@ int gpu_dma_setup(u64 curproc, u64 proc_vmspace_off) {
     u32 vmid = get_curproc_vmid(curproc, proc_vmspace_off);
     u64 gvms  = get_gvmspace(vmid);
     u64 start = kread64(gvms + GVMSPACE_START_VA);
-    //u64 gsize = kread64(gvms + GVMSPACE_SIZE_OFF);
 
     // relative VA within GPU address space
     u64 rel_va = victim_va - start;
