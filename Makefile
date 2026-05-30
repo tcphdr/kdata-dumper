@@ -10,7 +10,7 @@ CFLAGS := -Wall -Werror
 
 all: $(ELF)
 
-SRCS := main.c gpu.c
+SRCS := main.c
 OBJS := $(SRCS:.c=.o)
 
 $(ELF): $(OBJS)
@@ -20,4 +20,4 @@ $(ELF): $(OBJS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(ELF)
+	rm -f $(ELF) *.o
