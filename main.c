@@ -10,82 +10,104 @@ void notify(const char *fmt, ...) {
     va_start(va, fmt);
     vsnprintf(buf, sizeof(buf), fmt, va);
     va_end(va);
+    klog_printf("kdata-dumper: %s\n", buf);
     notify_request_t req;
     memset(&req, 0, sizeof(req));
     strncpy(req.message, buf, sizeof(req.message) - 1);
     sceKernelSendNotificationRequest(0, &req, sizeof(req), 0);
 }
 
-static u32 get_fw_version(void) {
-    u32 fw = 0;
-    size_t sz = sizeof(fw);
-    sysctlbyname("kern.sdk_version", &fw, &sz, NULL, 0);
-    return fw;
-}
-
 static size_t get_kdata_size(u64 kdata_base) {
     u64 kern_base = (u64)KERNEL_ADDRESS_TEXT_BASE;
     Elf64_Ehdr ehdr;
-    if (kernel_copyout(kern_base, &ehdr, sizeof(ehdr)) != 0) {
-        NOTIFY("kdata-dumper: failed to read kernel ELF header");
+    if (kernel_copyout(kern_base, &ehdr, sizeof(ehdr)) != 0)
         return 0;
-    }
-    if (ehdr.e_ident[0] != 0x7f || ehdr.e_phnum == 0) {
-        NOTIFY("kdata-dumper: invalid ELF header");
+    if (ehdr.e_ident[0] != 0x7f || ehdr.e_phnum == 0)
         return 0;
-    }
+
     size_t phdrs_size = sizeof(Elf64_Phdr) * ehdr.e_phnum;
     Elf64_Phdr *phdrs = malloc(phdrs_size);
     if (!phdrs) return 0;
+
     if (kernel_copyout(kern_base + ehdr.e_phoff, phdrs, phdrs_size) != 0) {
         free(phdrs);
         return 0;
     }
+
     size_t result = 0;
     for (int i = 0; i < ehdr.e_phnum; i++) {
         if (phdrs[i].p_type == PT_LOAD && phdrs[i].p_vaddr == kdata_base) {
             result = phdrs[i].p_filesz;
-            NOTIFY("kdata-dumper: ELF phdr match: %zu MB", result / (1024*1024));
             break;
         }
     }
+
     free(phdrs);
     return result;
 }
 
-int main(int argc, char *argv[]) {
+int main(void) {
     signal(SIGPIPE, SIG_IGN);
 
-    u32 fw = get_fw_version();
-    u64 kdata_base = (u64)KERNEL_ADDRESS_DATA_BASE;
-
-    NOTIFY("kdata-dumper: fw=0x%08x base=0x%lx", fw, kdata_base);
-
     if (setuid(0) != 0) {
-        NOTIFY("kdata-dumper: setuid failed");
-        return -1;
-    }
-    NOTIFY("kdata-dumper: setuid ok");
-
-    // Use SDK-provided text base to size the dump via ELF phdrs
-    size_t size = get_kdata_size(kdata_base);
-    if (size == 0) {
-        NOTIFY("kdata-dumper: ELF size detection failed, using heuristic");
-        size = (fw >= 0x07000000) ? FW_POST_700_DATA_SIZE : FW_PRE_700_DATA_SIZE;
-    }
-    NOTIFY("kdata-dumper: dumping %zu MB via GPU-DMA...", size / (1024 * 1024));
-
-    intptr_t curproc = kernel_get_proc(getpid());
-    if (!curproc) {
-        NOTIFY("kdata-dumper: kernel_get_proc failed");
+        NOTIFY("setuid failed");
         return -1;
     }
 
-    if (dump_to_file_gpu(OUTPUT_PATH, kdata_base, size,
-                         (u64)curproc,
-                         (u64)KERNEL_OFFSET_PROC_P_VMSPACE) != 0)
-        return -1;
+    u32 fw = kernel_get_fw_version();
+    u64 kdata_base = (u64)KERNEL_ADDRESS_DATA_BASE;
+    NOTIFY("fw=0x%08x base=0x%lx", fw, kdata_base);
 
-    NOTIFY("kdata-dumper: done");
-    return 0;
+    size_t total = get_kdata_size(kdata_base);
+    if (total == 0) {
+        NOTIFY("ELF phdr size detection failed, using heuristic");
+        total = (fw >= 0x07000000) ? FW_POST_700_DATA_SIZE : FW_PRE_700_DATA_SIZE;
+    }
+    NOTIFY("dump size: %zu MB", total / (1024 * 1024));
+
+    int fd = open(OUTPUT_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0777);
+    if (fd < 0) {
+        NOTIFY("open failed");
+        return -1;
+    }
+
+    void *chunk = malloc(CHUNK_SIZE);
+    if (!chunk) {
+        NOTIFY("malloc failed");
+        close(fd);
+        return -1;
+    }
+
+    size_t offset = 0;
+    int ret = 0;
+    while (offset < total) {
+        size_t to_read = total - offset;
+        if (to_read > CHUNK_SIZE) to_read = CHUNK_SIZE;
+
+        if (kernel_copyout(kdata_base + offset, chunk, to_read) != 0) {
+            NOTIFY("copyout failed at offset 0x%zx", offset);
+            ret = -1;
+            break;
+        }
+
+        ssize_t written = write(fd, chunk, to_read);
+        if (written != (ssize_t)to_read) {
+            NOTIFY("write failed at offset 0x%zx", offset);
+            ret = -1;
+            break;
+        }
+
+        offset += to_read;
+        if ((offset % (16 * 1024 * 1024)) == 0)
+            NOTIFY("progress: %zu / %zu MB",
+                   offset / (1024 * 1024),
+                   total  / (1024 * 1024));
+    }
+
+    free(chunk);
+    close(fd);
+
+    if (ret == 0)
+        NOTIFY("done — %zu MB written to %s", total / (1024 * 1024), OUTPUT_PATH);
+    return ret;
 }
