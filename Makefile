@@ -4,7 +4,7 @@ else
     $(error PS5_PAYLOAD_SDK is undefined)
 endif
 
-ELF := kdata_dumper.elf
+ELF := kdump.elf
 
 CFLAGS := -Wall -Werror
 
@@ -15,6 +15,9 @@ OBJS := $(SRCS:.c=.o)
 
 $(ELF): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
+	strip --strip-all $(ELF)
+	rm -f *.o
+	chmod 600 $(ELF)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
