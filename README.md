@@ -1,6 +1,6 @@
 # PS5 Kernel Data Dumper (kdata-dumper)
 
-A lightweight payload to extract the kernel data section from a jailbroken console. It dynamically resolves the Direct Map (DMAP) base address, walks the page tables to map virtual addresses to physical space, and dumps the specified segment to disk via userland logs.
+A lightweight payload to extract the kernel data section from a jailbroken console. Development will continue on this payload as I get more comfortable with payload development, it is also worth stating that this payload might also include junk data and isn't as precise as I'd like it to be. Over the coming months I plan on addressing this discrepancy to hopefully minimize the output of junk data also captured during the dumping process.
 
 ## Features
 
