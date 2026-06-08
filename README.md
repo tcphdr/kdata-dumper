@@ -30,6 +30,7 @@ A lightweight payload to extract the kernel data section from a jailbroken conso
 
 ## Requirements
 * Jailbroken PS5
+* ELF Loader (https://github.com/ps5-payload-dev/elfldr)
 * PS5 Payload SDK (https://github.com/ps5-payload-dev/sdk)
 ---
 
