@@ -15,7 +15,7 @@ A lightweight payload to extract the kernel data section from a jailbroken conso
 
 | Parameter | Value | Description |
 | :--- | :--- | :--- |
-| **Target Firmware** | > 6.00 | Confirmed working on 11.20; results may vary on other firmware versions. |
+| **Target Firmware** | >= 6.00 | Confirmed working on 11.20; results may vary on other firmware versions. |
 | **`PMAP_STORE_OFF`** | `0x02E04F18` | Offset to `pmap_store` |
 | **Default Dump Size** | `0x8800000` (~136 MB) | Standard kernel data segment size allocation |
 | **Output Path** | `/data/kdata.bin` | Direct destination on the console filesystem |
