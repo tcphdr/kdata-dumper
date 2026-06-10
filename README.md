@@ -1,4 +1,4 @@
-# PS5 Kernel Data Dumper (kdata-dumper)
+# PS5 Kernel Data Dumper
 
 A lightweight payload to extract the kernel data section from a jailbroken console.
 
