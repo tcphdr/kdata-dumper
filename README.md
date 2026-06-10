@@ -1,6 +1,6 @@
 # PS5 Kernel Data Dumper (kdata-dumper)
 
-A lightweight payload to extract the kernel data section from a jailbroken console. Development will continue on this payload as I get more comfortable with payload development, it is also worth stating that this payload might also include junk data and isn't as precise as I'd like it to be. Over the coming months I plan on addressing this discrepancy to hopefully minimize the output of junk data also captured during the dumping process.
+A lightweight payload to extract the kernel data section from a jailbroken console.
 
 ## Features
 
@@ -8,17 +8,6 @@ A lightweight payload to extract the kernel data section from a jailbroken conso
 * **Hardware Page-Table Walking:** Manually translates virtual addresses (`vaddr`) to physical addresses (`paddr`) supporting standard 4K pages and 2M large pages.
 * **Resilient Dumping:** Traverses memory page-by-page, safely falling back to zero-filled buffers if a page mapping is missing or unreadable to preserve data alignment.
 * **Live Progress Reporting:** Emits periodic feedback to kernel logs (`klog`) for every 16 MB written.
-
----
-
-## Technical Specifications
-
-| Parameter | Value | Description |
-| :--- | :--- | :--- |
-| **Target Firmware** | >= 6.00 | Confirmed working on 11.20; results may vary on other firmware versions. |
-| **`PMAP_STORE_OFF`** | `0x02E04F18` | Offset to `pmap_store`, 11.20 specific, needs to be changed for other firmware versions. |
-| **Default Dump Size** | `0x8800000` (~136 MB) | Standard kernel data segment size allocation |
-| **Output Path** | `/data/kdata.bin` | Direct destination on the console filesystem |
 
 ---
 
@@ -41,10 +30,21 @@ A lightweight payload to extract the kernel data section from a jailbroken conso
 3. Monitor progress via netcat or a dedicated kernel logging utility:
    ```bash
    # Example monitoring string output
-   data_base=0xffffffffxxxxxxxx dmap_base=0x00000xxxxxxxxxxx kernel_cr3=0x00000xxxxxxx
-   dumping 0x8800000 bytes to /data/kdata.bin
-   progress: 16 / 136 MB
-   progress: 32 / 136 MB
+   [init] FW 11.20
+   [init] data_base=0xffffffffdbf60000 pa=0x1bf60000
+   [init] dmap_base=0xffff856700000000 cr3=0x1f064000
+   [init] pmap_store=0xffffffffded64f18 (offset=0x2e04f18)
+   [size] scanning segment size...
+   [size] scanned 32 MB...
+   [size] scanned 64 MB...
+   [size] segment: vaddr=0xffffffffdbf60000 size=0x54a0000 (84 MB)
+   [dump] starting dump to /data/kdata.bin
+   [dump] progress: 16 / 84 MB
+   [dump] progress: 32 / 84 MB
+   [dump] progress: 48 / 84 MB
+   [dump] progress: 64 / 84 MB
+   [dump] progress: 80 / 84 MB
+   [done] kdata dump complete
    ...
    kdata dump complete
 ## Credits
