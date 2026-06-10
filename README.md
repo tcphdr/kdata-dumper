@@ -3,19 +3,19 @@
 A lightweight payload to extract the kernel data section from a jailbroken console.
 
 ## Features
-
-* **Dynamic DMAP Resolution:** Parses `pmap_store` relative to the kernel data base to calculate `g_dmap_base` and `cr3`.
-* **Hardware Page-Table Walking:** Manually translates virtual addresses (`vaddr`) to physical addresses (`paddr`) supporting standard 4K pages and 2M large pages.
-* **Resilient Dumping:** Traverses memory page-by-page, safely falling back to zero-filled buffers if a page mapping is missing or unreadable to preserve data alignment.
-* **Live Progress Reporting:** Emits periodic feedback to kernel logs (`klog`) for every 16 MB written.
+* **Firmware-Aware DMAP Resolution:** Selects the correct `pmap_store` offset at runtime based on the firmware version, then reads `pm_pml4` and `pm_cr3` via the SDK's kernel pipe primitive to establish the DMAP base and CR3 without any hardcoded absolute addresses.
+* **Hardware Page-Table Walking:** Manually translates kernel virtual addresses to physical addresses by traversing the 4-level paging structure (PML4 → PDPE → PDE → PTE) through the DMAP, with correct handling of 2MB large pages at the PDE level.
+* **Resilient Dumping:** Traverses memory page-by-page through the DMAP, safely falling back to zero-filled buffers if a page mapping is absent, preserving output alignment and file size.
+* **Live Progress Reporting:** Emits periodic feedback to stdout for size scanning (every 32MB) and dump progress (every 16MB), with a consolidated notification to the system UI on completion.
 
 ---
 
 ## Code Overview
-
-* `resolve_dmap_base()`: Inspects `pmap_store` to establish the relationship between PML4 and CR3 registers.
-* `vaddr_to_paddr()`: Traverses the 4-level paging structure (PML4 -> PDP -> PD -> PT) to find the physical frame backing the target virtual space.
-* `dump_segment_dmap()`: Streams raw bytes from the DMAP directly into the output file descriptor using 4KB chunks.
+* `get_pmap_store_offset(fw)`: Accepts the firmware version integer and returns the known `pmap_store` offset from the kernel data base for that firmware. Returns 0 for unsupported versions.
+* `resolve_dmap_base(pmap_store)`: Reads `pm_pml4` and `pm_cr3` from the resolved `pmap_store` address via the SDK's kernel pipe primitive, establishes `g_kernel_cr3`, and returns the DMAP base as `pml4 - cr3`.
+* `vaddr_to_paddr(vaddr)`: Traverses the 4-level paging structure (PML4 → PDPE → PDE → PTE) through the DMAP to resolve a kernel virtual address to its backing physical address. Handles 2MB large pages at the PDE level via the PS bit.
+* `find_data_segment_size(data_vaddr)`: Walks forward from the data segment base in 4KB increments via `vaddr_to_paddr`, tracking consecutive unmapped pages. Returns the offset at which `GAP_LIMIT` consecutive missing pages are encountered, indicating the segment boundary.
+* `dump_segment_dmap(vaddr, size, out_fd)`: Streams the data segment to disk in 4KB chunks. Each page is translated to a physical address and read through the DMAP via `kernel_copyout`. Unmapped pages are zero-filled to preserve alignment. Emits gap and progress diagnostics to stdout.
 
 ## Requirements
 * Jailbroken PS5
